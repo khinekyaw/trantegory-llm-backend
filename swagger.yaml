@@ -1,0 +1,176 @@
+openapi: 3.0.0
+info:
+  title: Trantegory LLM Backend API
+  description: |
+    API for automatically categorizing income and expense transactions using LLM.
+    The service uses Mistral-7B to analyze natural language input and categorize financial transactions.
+  version: 1.0.0
+  contact:
+    name: Trantegory Support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api
+    description: Local development server
+
+tags:
+  - name: Transactions
+    description: Transaction categorization endpoints
+
+paths:
+  /transactions/categorize:
+    post:
+      tags:
+        - Transactions
+      summary: Categorize transactions from text
+      description: |
+        Takes natural language text containing transaction descriptions and amounts,
+        and returns categorized transactions using LLM analysis.
+      operationId: categorizeTransactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategorizeRequest'
+            example:
+              text: "coffee 20$, Used laptop 500"
+              categories:
+                - id: "1"
+                  name: "Groceries"
+                  icon: "ShoppingCart"
+                  color: "#10B981"
+                  type: "expense"
+                - id: "14"
+                  name: "Other Income"
+                  icon: "Wallet"
+                  color: "#4F46E5"
+                  type: "income"
+      responses:
+        '200':
+          description: Successfully categorized transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+              example:
+                - amount: 20
+                  type: "expense"
+                  description: "Coffee"
+                  categoryId: "1"
+                  date: "2024-03-16T17:48:42.549Z"
+                  id: "b9a23f22-efe2-44f2-8ae1-f929e1d8bb05"
+                - amount: 500
+                  type: "expense"
+                  description: "Used laptop"
+                  categoryId: "1"
+                  date: "2024-03-16T17:48:42.549Z"
+                  id: "723df0e7-da27-45cf-8bf2-df705c7aead9"
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Missing required fields: text and categories are required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Failed to process transactions"
+                message: "LLM service unavailable"
+
+components:
+  schemas:
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - icon
+        - color
+        - type
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the category
+        name:
+          type: string
+          description: Display name of the category
+        icon:
+          type: string
+          description: Icon identifier for the category
+        color:
+          type: string
+          description: Hex color code for the category
+        type:
+          type: string
+          enum: [income, expense]
+          description: Type of the category
+
+    Transaction:
+      type: object
+      required:
+        - amount
+        - type
+        - description
+        - categoryId
+        - date
+        - id
+      properties:
+        amount:
+          type: number
+          description: Transaction amount without currency symbols
+        type:
+          type: string
+          enum: [income, expense]
+          description: Type of transaction
+        description:
+          type: string
+          description: Description of the transaction
+        categoryId:
+          type: string
+          description: ID of the matched category
+        date:
+          type: string
+          format: date-time
+          description: Timestamp of the transaction
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the transaction
+
+    CategorizeRequest:
+      type: object
+      required:
+        - text
+        - categories
+      properties:
+        text:
+          type: string
+          description: Raw text containing transaction descriptions and amounts
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+          description: List of available categories
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+        message:
+          type: string
+          description: Additional error details 
