@@ -1,8 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
-const { categorizeTransactions } = require('../services/openaiService');
+const { categorizeTransactions } = require('../services/openRouterService');
 
 async function processTransactions(req, res) {
-    console.log('process tran', req)
   try {
     const { text, categories } = req.body;
 

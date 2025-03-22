@@ -2,6 +2,8 @@
 const axios = require('axios')
 
 async function categorizeTransactions(text, categories) {
+  const currentDate = new Date().toISOString();
+
   const systemPrompt = `You are a JSON-only financial transaction categorizer. Your task is to analyze transactions and output ONLY valid JSON.
 
 Rules:
@@ -25,7 +27,7 @@ Example valid output format:
   "type": "expense",
   "description": "Coffee",
   "categoryId": "1",
-  "date": "2024-03-16T17:48:42.549Z",
+  "date": ${currentDate},
   "id": "b9a23f22-efe2-44f2-8ae1-f929e1d8bb05"
 }]`;
 
@@ -33,7 +35,7 @@ Example valid output format:
     const response = await axios.post(
         'https://openrouter.ai/api/v1/chat/completions',
         {
-          model: 'mistralai/mistral-7b-instruct:free',
+          model: process.env.OPENROUTER_MODEL,
           messages: [
             {
               role: 'system',
@@ -41,10 +43,10 @@ Example valid output format:
             },
             { 
               role: "user", 
-              content: `Convert this to JSON transactions array: ${text}. Remember to output ONLY the JSON array, no other text.` 
+              content: `Convert this to JSON transactions array: ${text}. Additional information - date: ${currentDate}. Remember to output ONLY the JSON array, no other text.` 
             }
           ],
-          temperature: 0.1
+          temperature: 0.2
         },
         {
           headers: {

@@ -18,6 +18,8 @@ servers:
 tags:
   - name: Transactions
     description: Transaction categorization endpoints
+  - name: AI Chat
+    description: AI-powered financial chat interface
 
 paths:
   /transactions/categorize:
@@ -40,13 +42,9 @@ paths:
               categories:
                 - id: "1"
                   name: "Groceries"
-                  icon: "ShoppingCart"
-                  color: "#10B981"
                   type: "expense"
                 - id: "14"
                   name: "Other Income"
-                  icon: "Wallet"
-                  color: "#4F46E5"
                   type: "income"
       responses:
         '200':
@@ -88,6 +86,80 @@ paths:
                 error: "Failed to process transactions"
                 message: "LLM service unavailable"
 
+  /transactions/chat:
+    post:
+      tags:
+        - AI Chat
+      summary: AI-powered financial chat interface
+      description: |
+        Process natural language queries about financial transactions and get AI-powered responses.
+        Can handle both transaction categorization and financial queries.
+      operationId: processAIChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIChatRequest'
+            example:
+              prompt: "Show me my cat expenses for this month"
+              categories:
+                - id: "1"
+                  name: "Groceries"
+                  type: "expense"
+                - id: "2"
+                  name: "Pets"
+                  type: "expense"
+              entries:
+                - amount: 50
+                  type: "expense"
+                  description: "Cat food"
+                  categoryId: "2"
+                  date: "2024-03-15T10:00:00Z"
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+              currency: "USD"
+      responses:
+        '200':
+          description: Successful AI chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIChatResponse'
+              example:
+                type: "query_response"
+                message: "Here are your cat expenses for this month"
+                data:
+                  query_type: "category_summary"
+                  results:
+                    - amount: 50
+                      type: "expense"
+                      description: "Cat food"
+                      categoryId: "2"
+                      date: "2024-03-15T10:00:00Z"
+                      id: "123e4567-e89b-12d3-a456-426614174000"
+                  summary:
+                    total_amount: 50
+                    count: 1
+                    period: "this_month"
+                timestamp: "2024-03-16T17:48:42.549Z"
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Missing required fields: prompt and categories are required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Failed to process AI chat request"
+                message: "LLM service unavailable"
+
 components:
   schemas:
     Category:
@@ -95,8 +167,6 @@ components:
       required:
         - id
         - name
-        - icon
-        - color
         - type
       properties:
         id:
@@ -105,12 +175,6 @@ components:
         name:
           type: string
           description: Display name of the category
-        icon:
-          type: string
-          description: Icon identifier for the category
-        color:
-          type: string
-          description: Hex color code for the category
         type:
           type: string
           enum: [income, expense]
@@ -162,6 +226,69 @@ components:
           items:
             $ref: '#/components/schemas/Category'
           description: List of available categories
+
+    AIChatRequest:
+      type: object
+      required:
+        - prompt
+        - categories
+      properties:
+        prompt:
+          type: string
+          description: User's query or transaction text
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+          description: List of available categories
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+          description: Previous transaction entries
+        currency:
+          type: string
+          description: Currency code (e.g., USD, EUR)
+          default: USD
+
+    AIChatResponse:
+      type: object
+      required:
+        - type
+        - message
+        - data
+        - timestamp
+      properties:
+        type:
+          type: string
+          enum: [categorization, query_response]
+          description: Type of response
+        message:
+          type: string
+          description: AI's response message
+        data:
+          oneOf:
+            - type: array
+              items:
+                $ref: '#/components/schemas/Transaction'
+              description: Array of categorized transactions
+            - type: object
+              properties:
+                query_type:
+                  type: string
+                  description: Type of query response
+                results:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Transaction'
+                  description: Matching transactions
+                summary:
+                  type: object
+                  description: Query result summary
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
 
     Error:
       type: object
