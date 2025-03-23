@@ -15,6 +15,9 @@ const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the public directory
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 // Serve Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

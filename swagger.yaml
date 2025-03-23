@@ -94,6 +94,7 @@ paths:
       description: |
         Process natural language queries about financial transactions and get AI-powered responses.
         Can handle both transaction categorization and financial queries.
+        Supports image analysis using Qwen VL model.
       operationId: processAIChat
       requestBody:
         required: true
@@ -118,6 +119,7 @@ paths:
                   date: "2024-03-15T10:00:00Z"
                   id: "123e4567-e89b-12d3-a456-426614174000"
               currency: "USD"
+              imageUrl: "https://example.com/receipt.jpg"
       responses:
         '200':
           description: Successful AI chat response
@@ -159,6 +161,58 @@ paths:
               example:
                 error: "Failed to process AI chat request"
                 message: "LLM service unavailable"
+
+  /transactions/upload-image:
+    post:
+      tags:
+        - AI Chat
+      summary: Upload and process image with OCR
+      description: |
+        Upload an image file for OCR processing using Qwen VL model.
+        The image will be analyzed for text and numbers.
+      operationId: uploadImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file to process (JPEG, PNG, or JPG)
+      responses:
+        '200':
+          description: Image processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Image processed successfully"
+                  ocr_result:
+                    type: string
+                    description: OCR analysis result
+        '400':
+          description: Bad request - missing or invalid file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "No image file provided"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Failed to process image"
+                message: "Error details..."
 
 components:
   schemas:
@@ -250,6 +304,10 @@ components:
           type: string
           description: Currency code (e.g., USD, EUR)
           default: USD
+        imageUrl:
+          type: string
+          description: URL of an image to analyze (optional)
+          format: uri
 
     AIChatResponse:
       type: object

@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-async function processAIChat(prompt, categories, entries = [], currency = 'USD') {
+async function processAIChat(prompt, categories, entries = [], currency = 'USD', imageUrl = null) {
   const currentDate = new Date().toISOString();
   const currentYear = new Date().getFullYear();
 
@@ -47,6 +47,16 @@ Rules:
      * "last week" = previous week's transactions in ${currentYear}
      * "today" = current day's transactions
      * "yesterday" = previous day's transactions in ${currentYear}
+
+4. Special rules for receipt image processing:
+   - When analyzing receipt images:
+     * Extract individual line items only
+     * DO NOT include summary totals, tax amounts, or subtotals as separate items
+     * DO NOT include service charges or tips as separate items
+     * Focus on the main products/services purchased
+     * If a line item has multiple products, split them into separate transactions
+     * Use the receipt date if available, otherwise use current date
+     * Match items to the most appropriate category from the provided list
 
 Available categories:
 ${JSON.stringify(categories, null, 2)}
@@ -101,21 +111,42 @@ For query:
 }`;
 
   try {
+    const messages = [
+      {
+        role: 'system',
+        content: systemPrompt
+      }
+    ];
+
+    if (imageUrl) {
+      messages.push({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: prompt || "Please analyze this receipt and extract individual line items. Do not include totals, tax, or service charges as separate items."
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: imageUrl
+            }
+          }
+        ]
+      });
+    } else {
+      messages.push({
+        role: "user",
+        content: prompt
+      });
+    }
+
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: process.env.OPENROUTER_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.15
+        model: imageUrl ? 'qwen/qwen2.5-vl-72b-instruct' : process.env.OPENROUTER_MODEL,
+        messages,
+        temperature: 0.2
       },
       {
         headers: {

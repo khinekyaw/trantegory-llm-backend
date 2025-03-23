@@ -2,7 +2,7 @@ const { processAIChat } = require('../services/aiChatService');
 
 async function handleAIChat(req, res) {
   try {
-    const { prompt, categories, entries, currency } = req.body;
+    const { prompt, categories, entries, currency, imageUrl } = req.body;
 
     if (!prompt || !categories) {
       return res.status(400).json({
@@ -10,7 +10,7 @@ async function handleAIChat(req, res) {
       });
     }
 
-    const result = await processAIChat(prompt, categories, entries || [], currency || 'USD');
+    const result = await processAIChat(prompt, categories, entries || [], currency || 'USD', imageUrl);
     res.json(result);
   } catch (error) {
     console.error('Error processing AI chat:', error);
