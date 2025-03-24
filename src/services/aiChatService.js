@@ -55,7 +55,13 @@ Rules:
      * DO NOT include service charges or tips as separate items
      * Focus on the main products/services purchased
      * If a line item has multiple products, split them into separate transactions
-     * Use the receipt date if available, otherwise use current date
+     * Date handling for receipts:
+       - ALWAYS extract the complete date from the receipt (day, month, and year)
+       - If the receipt shows only day and month:
+         * If the month is in the future relative to current date, use previous year
+         * If the month is in the past relative to current date, use current year
+       - If no date is found on the receipt, use current date
+       - Convert all dates to ISO string format (YYYY-MM-DDTHH:mm:ss.sssZ)
      * Match items to the most appropriate category from the provided list
 
 Available categories:
@@ -124,7 +130,7 @@ For query:
         content: [
           {
             type: "text",
-            text: prompt || "Please analyze this receipt and extract individual line items. Do not include totals, tax, or service charges as separate items."
+            text: prompt || "Please analyze this receipt and extract individual line items. Make sure to include the complete date from the receipt (day, month, and year). Do not include totals, tax, or service charges as separate items."
           },
           {
             type: "image_url",
